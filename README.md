@@ -15,3 +15,4 @@ The simplest versions of a script for Telegram to automatically comment on newly
 ![3](https://github.com/VookeZX/TelegramAutoCommentor/assets/78411508/3491d85b-4cd4-40b1-8e7f-c1c8636c9aba)
 
 5. Write "python main.py" in the console and enjoy!
+![image](https://github.com/VookeZX/TelegramAutoCommentor/assets/78411508/6f4ce383-7fc9-495c-953d-fa8c2e5d26fc)
