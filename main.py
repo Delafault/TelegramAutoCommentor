@@ -146,7 +146,8 @@ if channel_usernames is not None:
 # -Тип главная функция
 async def main():
 
-    gd_print("Бот запущен. Мониторим канал(ы)...")
+    name = await client.get_me()
+    gd_print(f"Бот запущен ({name.first_name}). Мониторим канал(ы)...")
     try:
         channel_entities = None
         channel_entities = [await client.get_entity(username) for username in channel_usernames]
