@@ -1,27 +1,23 @@
-### ОБЯЗАТЕЛЬНО ЗАПОЛНИТЕ ДАННЫЕ НИЖЕ ↓
-
-# -Варианты текстовых комментариев
-texts_commented = ["Ого вау круто класс", "Бывает", "лол", "По базе, так сказать.", "Ого, пофиг"]
-
-# -Группы для комментирования записей (без @)
-channel_usernames = ['kanalbeznazvaniya', 'unnamedcanal']
-
-# -Параметр автоматического вступления в канал
-auto_join = True #Заменить 'False' на 'True', чтобы активировать режим.
-
-#########################################
-
-
 # -Импорт библиотек
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.sync import TelegramClient
 from telethon.events import NewMessage
+from telethon import errors
 import configparser
+import asyncio
 import random
 import os
+import re
 
-# -Чистка консоли
-os.system('cls' if os.name == 'nt' else 'clear')
+logo = """
+▀█▀ █▀▀ ▄▄ █▀▀ █▀█ █▀▄▀█ █▀▄▀█|ᵇʸ ᵈᵉˡᵃᶠᵃᵘˡᵗ
+░█░ █▄█ ░░ █▄▄ █▄█ █░▀░█ █░▀░█
+"""
+
+
+# -Функция для чистки консоли
+def cls_cmd():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 # -Определение принтов
 def gd_print(value):
@@ -39,23 +35,129 @@ def bd_print(value):
 # -Создание клиента и получение необходимых данных из 'settings.ini'
 config = configparser.ConfigParser()
 config.read('settings.ini')
+cls_cmd()
 
-api_id = config['Telegram']['api_id']
-api_hash = config['Telegram']['api_hash']
+if 'Telegram' not in config:
+    config['Telegram'] = {}
 
-client = TelegramClient('SESSION_FOR_TELEGRAM_COMMENTOR', api_id, api_hash, device_model=config['Telegram']['device_model'], system_version=config['Telegram']['system_version'])
+if 'api_id' not in config['Telegram'] or not config['Telegram']['api_id']:
+    api_id = input('Введите api_id: ')
+    while not api_id:
+        bd_print('Значение не может быть пустым.')
+        api_id = input('Введите api_id: ')
+    config['Telegram']['api_id'] = api_id
 
-# -Вывод логотипа
-print(""" (TG-COMMENTOR 2.0)""")
+if 'api_hash' not in config['Telegram'] or not config['Telegram']['api_hash']:
+    api_hash = input('Введите api_hash: ')
+    while not api_hash:
+        bd_print('Значение не может быть пустым.')
+        api_hash = input('Введите api_hash: ')
+    config['Telegram']['api_hash'] = api_hash
 
-# -Обработчик новых сообщений
+if 'device_model' not in config['Telegram'] or not config['Telegram']['device_model']:
+    device_model = input('Введите device_model: ')
+    while not device_model:
+        bd_print('Значение не может быть пустым.')
+        device_model = input('Введите device_model: ')
+    config['Telegram']['device_model'] = device_model
+
+if 'system_version' not in config['Telegram'] or not config['Telegram']['system_version']:
+    system_version = input('Введите system_version: ')
+    while not system_version:
+        bd_print('Значение не может быть пустым.')
+        system_version = input('Введите system_version: ')
+    config['Telegram']['system_version'] = system_version
+
+while 'texts_commented' not in config['Telegram'] or not config['Telegram']['texts_commented']:
+    print('Введите текстовые комментарии (для завершения введите пустую строку, для комментария с несколькими строками используйте "\\n" для создания новой строки):')
+    texts_commented_lines = []
+    while True:
+        line = input()
+        if not line:
+            if not texts_commented_lines:
+                bd_print('Список текстовых комментариев пуст. Пожалуйста, введите хотя бы один комментарий:')
+            else:
+                break
+        texts_commented_lines.append(line)
+    texts_commented = '\n'.join(texts_commented_lines)
+    comments = texts_commented.split('\n')
+
+    formatted_comments = []
+    current_comment = ""
+    for comment in comments:
+        if comment.startswith('\t') or comment.startswith(' '):
+            current_comment += comment.lstrip() + '\n'
+        else:
+            if current_comment:
+                formatted_comments.append(current_comment.rstrip())
+            current_comment = comment + '\n'
+
+    if current_comment:
+        formatted_comments.append(current_comment.rstrip())
+    formatted_texts_commented = '\n'.join(formatted_comments)
+    config['Telegram']['texts_commented'] = formatted_texts_commented
+
+while 'channel_usernames' not in config['Telegram'] or not config['Telegram']['channel_usernames']:
+    print('Введите группы для комментирования записей (без @, каждый с новой строки, для завершения введите пустую строку):')
+    channel_usernames_lines = []
+    while True:
+        line = input()
+        if not line:
+            if not channel_usernames_lines:
+                bd_print('Список каналов пуст. Пожалуйста, введите хотя бы один @username канала:')
+            else:
+                break
+        channel_usernames_lines.append(line)
+    channel_usernames = ' ,'.join(channel_usernames_lines)
+    config['Telegram']['channel_usernames'] = channel_usernames
+
+if 'auto_join' not in config['Telegram'] or not config['Telegram']['auto_join']:
+    while True:
+        auto_join_input = input('Хотите активировать режим автоматического вступления в канал? (True/False): ')
+        if auto_join_input.lower() in ['true', 'false']:
+            config['Telegram']['auto_join'] = auto_join_input.lower()
+            break
+        else:
+            bd_print('Пожалуйста, введите "True" или "False".')
+
+with open('settings.ini', 'w') as configfile:
+    config.write(configfile)
+
+api_id = config['Telegram'].get('api_id', None)
+api_hash = config['Telegram'].get('api_hash', None)
+device_model = config['Telegram'].get('device_model', None)
+system_version = config['Telegram'].get('system_version', None)
+texts_commented = config['Telegram'].get('texts_commented', None) #or texts_commented = ['привет', 'да', 'Как дела?\nУ меня всё хорошо']
+channel_usernames = config['Telegram'].get('channel_usernames', None)
+auto_join = config['Telegram'].get('auto_join', None)
+client = TelegramClient('SESSION_FOR_TELEGRAM_COMMENTOR', api_id, api_hash, device_model=device_model, system_version=system_version)
+
+if texts_commented is not None:
+    comments = texts_commented.split('\n')
+    texts_commented = []
+    for comment in comments:
+        comment = comment.replace('\\n', '\n')
+        texts_commented.extend(re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', comment))
+if channel_usernames is not None:
+    channels = channel_usernames.split(', ')
+    channel_usernames = [channel.strip() for channel in channels if channel]
+
+
+# -Тип главная функция
 async def main():
 
-    channel_entities = [await client.get_entity(username) for username in channel_usernames]
+    gd_print("Бот запущен. Мониторим канал(ы)...")
+    try:
+        channel_entities = None
+        channel_entities = [await client.get_entity(username) for username in channel_usernames]
+        commented_messages = {entity.id: set() for entity in channel_entities}
+    except Exception as e:
+        bd_print(f"Ошибка: {e}")
+        if 'No user has' in str(e) and 'as username' in str(e) and channel_entities == None:
+            bd_print("Плохо дело. Ни один канал не был найден. Работать негде. Скрипт завершён.")
+            exit()
 
-    commented_messages = {entity.id: set() for entity in channel_entities}
-
-    if auto_join:
+    if auto_join.lower() == "true":
         for username in channel_usernames:
             try:
                 await client(JoinChannelRequest(username))
@@ -63,18 +165,24 @@ async def main():
             except Exception as e:
                 bd_print(f"Не удалось присоединиться к каналу @{username}: {e}")
 
+    # -Обработчик события создания новых постов.
     async def handle_new_posts(event):
-        print("Создан новый пост. Комментирую...")
+        loop = asyncio.get_event_loop()
+        start_time = loop.time()
+        print("> Создан новый пост. Комментирую...")
         message = event.message
         comment_text = random.choice(texts_commented)
-        
         for entity in channel_entities:
             if entity.id == message.peer_id.channel_id:
                 if not message.out and message.id not in commented_messages[entity.id]:
                     try:
-                        await client.send_message(entity=entity, message=comment_text, comment_to=message)
-                        gd_print("Созданный пост успешно прокомментирован.")
+                        await client.send_message(entity=entity, message=str(comment_text), comment_to=message)
+                        end_time = loop.time()
+                        elapsed_time = end_time - start_time
+                        gd_print(f"Созданный пост успешно прокомментирован. Затраченное время: {round(elapsed_time, 2)} секунд.")
                         commented_messages[entity.id].add(message.id)
+                    except errors.ChannelPrivateError as banorprivate:
+                        bd_print(f"Ошибка по привату: {banorprivate}")
                     except Exception as e:
                         bd_print(f"Возникла ошибка при комментировании записи: {e}")
 
@@ -83,7 +191,9 @@ async def main():
 
     await client.run_until_disconnected()
 
-# -Запуск
-with client:
-    gd_print("Бот запущен. Мониторим канал(ы)...")
-    client.loop.run_until_complete(main())
+# -Запуск, чистка консоли и вывод лого
+if __name__ == "__main__":
+    cls_cmd()
+    print(logo)
+    with client:
+        client.loop.run_until_complete(main())
