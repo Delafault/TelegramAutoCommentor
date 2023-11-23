@@ -13,4 +13,4 @@ if errorlevel 1 (
 
 echo Запускаю скрипт...
 timeout /t 3 >nul
-start python commentor.py
+start python main.py
