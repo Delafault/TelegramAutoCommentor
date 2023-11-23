@@ -1,18 +1,21 @@
 # TelegramAutoCommentor
 The simplest versions of a script for Telegram to automatically comment on newly created posts in channels.
-
--- How use? --
+<div align="center">
+  -- How use? --
+</div>
 
 1. Download the repository
 ![1](https://github.com/VookeZX/TelegramAutoCommentor/assets/78411508/8e410b21-1272-4ac1-b4c3-ddac3cef30c2)
+---
+2. Use the command "`pip install -r requirements`" or just run the "`install&start.bat`" file (recommended)
+![image](https://github.com/delefault/TelegramAutoCommentor/assets/78411508/ab6f0376-e71b-497a-bc77-8a466e1a8621)
+---
+3. Enter all necessary data (including `api_id` and `api_hash`, which can be obtained from `my.telegram.org`)
+![image](https://github.com/delefault/TelegramAutoCommentor/assets/78411508/06d9b538-8eb4-49ba-a1d0-6198b2453a4d)
+---
+4. It's done! Everything should work successfully now)
+![image](https://github.com/delefault/TelegramAutoCommentor/assets/78411508/2da7cfb7-7efc-4045-9254-ec47786508ee)
 
-2. Download the necessary libraries to run the script using the command: "pip install -r requirements.txt"
-![2](https://github.com/VookeZX/TelegramAutoCommentor/assets/78411508/cc95bedb-e5e6-4de3-9c1e-7e3cf7e6de53)
-
-3. Open the "settings.ini" file and edit it (you can get api_id and api_hash on the website https://my.telegram.org/auth by creating an application)
-
-4. Go to the "main.py" file and edit the data you need.
-![3](https://github.com/VookeZX/TelegramAutoCommentor/assets/78411508/3491d85b-4cd4-40b1-8e7f-c1c8636c9aba)
-
-5. Write "python main.py" in the console and enjoy!
-![image](https://github.com/VookeZX/TelegramAutoCommentor/assets/78411508/6f4ce383-7fc9-495c-953d-fa8c2e5d26fc)
+---
+5. To `change the entered data in the future`, you will need to do so via the `'settings.ini'` file!
+![image](https://github.com/delefault/TelegramAutoCommentor/assets/78411508/cd4f8e65-f7b4-47fb-b2e2-48505f15cba0)
