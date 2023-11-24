@@ -2,7 +2,7 @@
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.sync import TelegramClient
 from telethon.events import NewMessage
-from telethon import errors
+from telethon.errors import ChannelPrivateError
 import configparser
 import asyncio
 import random
@@ -182,7 +182,7 @@ async def main():
                         elapsed_time = end_time - start_time
                         gd_print(f"Созданный пост успешно прокомментирован. Затраченное время: {round(elapsed_time, 2)} секунд.")
                         commented_messages[entity.id].add(message.id)
-                    except errors.ChannelPrivateError as banorprivate:
+                    except ChannelPrivateError as banorprivate:
                         bd_print(f"Ошибка по привату: {banorprivate}")
                     except Exception as e:
                         bd_print(f"Возникла ошибка при комментировании записи: {e}")
