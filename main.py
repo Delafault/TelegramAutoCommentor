@@ -1,13 +1,18 @@
 # -Импорт библиотек
 from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.errors import ChannelPrivateError
 from telethon.sync import TelegramClient
 from telethon.events import NewMessage
-from telethon.errors import ChannelPrivateError
+from openai import AsyncOpenAI
 import configparser
 import asyncio
 import random
 import os
 import re
+
+# -Можно изменить базовую инструкцию для комментирования записей для chatGPT и/или модель GPT при желании
+openai_answer = """Сейчас ты играешь роль обычного пользователя в Telegram. Я предоставлю тебе текст поста, на который ты должен будешь отреагировать. Реагируй кратко и эмоционально, как обычный пользователь. Вне зависимости от контекста предоставленного тебе текста поста ты должен отреагировать на него. Никогда не говори, кто ты и зачем ты здесь. Никогда не говори, что ты готов помочь. Отвечай, как обычный пользователь. Если ты не знаешь, как реагировать на пост или текст поста пуст или не имеет никакого смысла, то ответь только: '...'. Отвечай только на том языке, который используется в посте."""
+modelgpt = "gpt-3.5-turbo"
 
 logo = """
 ▀█▀ █▀▀ ▄▄ █▀▀ █▀█ █▀▄▀█ █▀▄▀█|ᵇʸ ᵈᵉˡᵃᶠᵃᵘˡᵗ
@@ -120,6 +125,15 @@ if 'auto_join' not in config['Telegram'] or not config['Telegram']['auto_join']:
         else:
             bd_print('Пожалуйста, введите "True" или "False".')
 
+if 'ai_comment' not in config['Telegram'] or not config['Telegram']['ai_comment']:
+    while True:
+        ai_comment_input = input('Использовать ИИ для генерации текста? (True/False): ')
+        if ai_comment_input.lower() in ['true', 'false']:
+            config['Telegram']['ai_comment'] = ai_comment_input.lower()
+            break
+        else:
+            bd_print('Пожалуйста, введите "True" или "False".')
+
 with open('settings.ini', 'w') as configfile:
     config.write(configfile)
 
@@ -130,6 +144,8 @@ system_version = config['Telegram'].get('system_version', None)
 texts_commented = config['Telegram'].get('texts_commented', None) #or texts_commented = ['привет', 'да', 'Как дела?\nУ меня всё хорошо']
 channel_usernames = config['Telegram'].get('channel_usernames', None)
 auto_join = config['Telegram'].get('auto_join', None)
+ai_comment = config['Telegram'].get('ai_comment', None)
+gpt_api_key = config['Telegram'].get('gpt_api_key', None)
 client = TelegramClient('SESSION_FOR_TELEGRAM_COMMENTOR', api_id, api_hash, device_model=device_model, system_version=system_version)
 
 if texts_commented is not None:
@@ -141,7 +157,29 @@ if texts_commented is not None:
 if channel_usernames is not None:
     channels = channel_usernames.split(', ')
     channel_usernames = [channel.strip() for channel in channels if channel]
+if ai_comment is not None and gpt_api_key is None and ai_comment != 'false':
+    gpt_api_key = input('Введите API ключ от OpenAI GPT-3: ')
+    while not gpt_api_key:
+        bd_print('Значение не может быть пустым.')
+        gpt_api_key = input('Введите API ключ от OpenAI GPT-3: ')
+    config['Telegram']['gpt_api_key'] = gpt_api_key
+    with open('settings.ini', 'w') as configfile:
+        config.write(configfile)
+if ai_comment.lower() == "true":
+    clientus = AsyncOpenAI(api_key=gpt_api_key)
 
+# -Функция для запроса к chatGPT-3.5-turbo и получение ответа
+async def chatgpt_ai(text):
+    completion = await clientus.chat.completions.create(
+    model=modelgpt,
+    messages=[
+        {"role": "system", "content": openai_answer},
+        {"role": "system", "content": f"В соответствии с инструкцией, которую я тебе дал, отреагируй на данный пост: '{text}'"}
+    ],
+    stream=False
+    )
+
+    return completion.choices[0].message.content
 
 # -Тип главная функция
 async def main():
@@ -172,12 +210,16 @@ async def main():
         start_time = loop.time()
         print("> Создан новый пост. Комментирую...")
         message = event.message
-        comment_text = random.choice(texts_commented)
         for entity in channel_entities:
             if entity.id == message.peer_id.channel_id:
                 if not message.out and message.id not in commented_messages[entity.id]:
                     try:
-                        await client.send_message(entity=entity, message=str(comment_text), comment_to=message)
+                        if ai_comment.lower() == "true":
+                            comment_text = await chatgpt_ai(message.text)
+                            await client.send_message(entity=entity, message=str(comment_text), comment_to=message)
+                        else:
+                            comment_text = random.choice(texts_commented)
+                            await client.send_message(entity=entity, message=str(comment_text), comment_to=message)
                         end_time = loop.time()
                         elapsed_time = end_time - start_time
                         gd_print(f"Созданный пост успешно прокомментирован. Затраченное время: {round(elapsed_time, 2)} секунд.")
